@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Settings, Save, CheckCircle, Info, Eye, EyeOff, ExternalLink } from 'lucide-react';
+import { Settings, Save, CheckCircle, Info, Eye, EyeOff, ExternalLink, Lock, ArrowRight } from 'lucide-react';
 import { getConfig, saveConfig } from '@/lib/sheets';
 import { DashboardConfig } from '@/types';
 
@@ -17,9 +17,18 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
   const [mounted, setMounted] = useState(false);
+  
+  // Auth states
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [password, setPassword] = useState('');
+  const [authError, setAuthError] = useState(false);
 
   useEffect(() => {
     setConfig(getConfig());
+    const isAuth = sessionStorage.getItem('semar_settings_auth') === 'true';
+    if (isAuth) {
+      setIsAuthenticated(true);
+    }
     setMounted(true);
   }, []);
 
@@ -32,8 +41,67 @@ export default function SettingsPage() {
   const handleChange = (key: keyof DashboardConfig, value: string | number) => {
     setConfig((prev) => ({ ...prev, [key]: value }));
   };
+  
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password === 'semarjaya') {
+      setIsAuthenticated(true);
+      sessionStorage.setItem('semar_settings_auth', 'true');
+      setAuthError(false);
+    } else {
+      setAuthError(true);
+    }
+  };
 
   if (!mounted) return null;
+
+  if (!isAuthenticated) {
+    return (
+      <div className="fade-in" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+        <div className="card" style={{ maxWidth: 400, width: '100%', padding: '32px' }}>
+          <div style={{ textAlign: 'center', marginBottom: 24 }}>
+            <div style={{ 
+              width: 48, height: 48, borderRadius: '50%', background: 'rgba(99,102,241,0.1)', 
+              color: 'var(--accent-primary)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              marginBottom: 16
+            }}>
+              <Lock size={24} />
+            </div>
+            <h2 style={{ fontSize: '1.25rem', marginBottom: 8, color: 'var(--text-primary)' }}>Akses Terkunci</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.5 }}>
+              Halaman pengaturan ini hanya dapat diakses oleh admin, owner, dan developer.
+            </p>
+          </div>
+          
+          <form onSubmit={handleLogin}>
+            <div className="form-group">
+              <label className="form-label" htmlFor="password">Password</label>
+              <input
+                id="password"
+                type="password"
+                className="form-input"
+                placeholder="Masukkan password..."
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setAuthError(false);
+                }}
+                autoFocus
+              />
+              {authError && (
+                <div style={{ color: 'var(--accent-danger)', fontSize: '0.8rem', marginTop: 8 }}>
+                  Password salah, silakan coba lagi.
+                </div>
+              )}
+            </div>
+            <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: 16 }}>
+              Buka Pengaturan <ArrowRight size={16} />
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fade-in">
