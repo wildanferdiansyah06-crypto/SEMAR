@@ -22,12 +22,6 @@ const NAV_ITEMS = [
       { href: '/analytics', label: 'Analitik', icon: BarChart3 },
     ],
   },
-  {
-    section: 'Konfigurasi',
-    items: [
-      { href: '/settings', label: 'Pengaturan', icon: Settings },
-    ],
-  },
 ];
 
 export default function Sidebar() {

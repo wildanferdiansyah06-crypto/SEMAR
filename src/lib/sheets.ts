@@ -9,20 +9,20 @@ const DEFAULT_CONFIG: DashboardConfig = {
   reportName: 'My Dashboard',
 };
 
-// ─── Config helpers (localStorage) ────────────────────────────
+// ─── Config helpers (Environment Variables) ────────────────────────────
 export function getConfig(): DashboardConfig {
-  if (typeof window === 'undefined') return DEFAULT_CONFIG;
-  try {
-    const stored = localStorage.getItem('dashboard_config');
-    if (stored) return { ...DEFAULT_CONFIG, ...JSON.parse(stored) };
-  } catch {}
-  return DEFAULT_CONFIG;
+  return {
+    lookerEmbedUrl: process.env.NEXT_PUBLIC_LOOKER_EMBED_URL || '',
+    sheetsId: process.env.NEXT_PUBLIC_SHEETS_ID || '',
+    apiKey: process.env.NEXT_PUBLIC_SHEETS_API_KEY || '',
+    sheetsRange: process.env.NEXT_PUBLIC_SHEETS_RANGE || 'Sheet1!A1:Z100',
+    refreshInterval: Number(process.env.NEXT_PUBLIC_REFRESH_INTERVAL) || 30,
+    reportName: process.env.NEXT_PUBLIC_REPORT_NAME || 'SEMAR Dashboard',
+  };
 }
 
 export function saveConfig(config: Partial<DashboardConfig>): void {
-  if (typeof window === 'undefined') return;
-  const current = getConfig();
-  localStorage.setItem('dashboard_config', JSON.stringify({ ...current, ...config }));
+  console.warn('Konfigurasi sekarang menggunakan Environment Variables dan tidak dapat diubah dari website.');
 }
 
 // ─── Google Sheets API ─────────────────────────────────────────
