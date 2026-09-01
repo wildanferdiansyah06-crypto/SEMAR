@@ -14,16 +14,16 @@ import {
   X,
   Sparkles,
   ChevronRight,
-  TrendingUp,
   PackageCheck,
+  ShieldCheck,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
   {
-    section: 'ERP Jastip Menu',
+    section: 'Menu Utama',
     items: [
       { href: '/dashboard', label: 'Dashboard Utama', icon: LayoutDashboard, badge: 'Live' },
-      { href: '/orders', label: 'Pesanan & Belanja', icon: ShoppingBag, badge: '7 Aktif' },
+      { href: '/orders', label: 'Pesanan & Belanja', icon: ShoppingBag },
       { href: '/drivers', label: 'Performa Driver', icon: Bike },
       { href: '/customers', label: 'Pelanggan & CRM', icon: Users },
       { href: '/analytics', label: 'Analitik Waktu & SLA', icon: Clock },
@@ -45,7 +45,7 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* Mobile hamburger */}
+      {/* Mobile hamburger button */}
       <button
         className="mobile-hamburger"
         onClick={() => setIsMobileOpen(!isMobileOpen)}
@@ -74,23 +74,23 @@ export default function Sidebar() {
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0,0,0,0.6)',
+            background: 'rgba(0,0,0,0.7)',
             zIndex: 99,
-            backdropFilter: 'blur(4px)',
+            backdropFilter: 'blur(6px)',
           }}
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar container */}
       <aside className={`sidebar ${isMobileOpen ? 'open' : ''}`}>
-        {/* Logo */}
+        {/* Logo Brand */}
         <div className="sidebar-logo">
           <div className="sidebar-logo-icon">
-            <PackageCheck size={20} color="white" />
+            <PackageCheck size={20} color="#ffffff" />
           </div>
           <div>
             <div className="sidebar-logo-text">SEMAR JASTIP</div>
-            <div className="sidebar-logo-sub">ERP & Analytics UMKM</div>
+            <div className="sidebar-logo-sub">Enterprise ERP UMKM</div>
           </div>
         </div>
 
@@ -109,23 +109,28 @@ export default function Sidebar() {
                     className={`sidebar-nav-item ${isActive ? 'active' : ''}`}
                     onClick={() => setIsMobileOpen(false)}
                   >
-                    <Icon className="nav-icon" size={18} />
+                    <Icon className="nav-icon" size={17} />
                     <span style={{ flex: 1 }}>{item.label}</span>
                     {item.badge && (
                       <span
                         style={{
-                          fontSize: '0.65rem',
+                          fontSize: '0.625rem',
                           fontWeight: 700,
                           padding: '2px 6px',
-                          borderRadius: 10,
-                          background: item.badge === 'Live' ? 'rgba(16,185,129,0.2)' : 'rgba(99,102,241,0.2)',
-                          color: item.badge === 'Live' ? '#10b981' : '#818cf8',
+                          borderRadius: 99,
+                          background: 'rgba(16,185,129,0.18)',
+                          color: '#34d399',
+                          border: '1px solid rgba(16,185,129,0.3)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 4,
                         }}
                       >
+                        <span className="refresh-dot" style={{ width: 4, height: 4 }} />
                         {item.badge}
                       </span>
                     )}
-                    {isActive && <ChevronRight size={14} style={{ opacity: 0.5, marginLeft: 4 }} />}
+                    {isActive && <ChevronRight size={13} style={{ opacity: 0.6, marginLeft: 2 }} />}
                   </Link>
                 );
               })}
@@ -133,27 +138,43 @@ export default function Sidebar() {
           ))}
         </nav>
 
-        {/* Footer Quick Status */}
+        {/* Footer: User & Live Status */}
         <div className="sidebar-footer">
           <div
             style={{
-              padding: '12px',
+              padding: '10px 12px',
               background: 'var(--bg-glass)',
-              borderRadius: 'var(--radius-md)',
+              borderRadius: 'var(--radius-sm)',
               border: '1px solid var(--border-subtle)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.725rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                <span className="refresh-dot" style={{ width: 6, height: 6 }} />
-                Driver Siaga
-              </div>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent-primary-light)' }}>
-                6 / 8 Aktif
-              </span>
+            <div
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: '50%',
+                background: 'var(--gradient-primary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 700,
+                fontSize: '0.75rem',
+                color: '#ffffff',
+                flexShrink: 0,
+              }}
+            >
+              AD
             </div>
-            <div style={{ fontSize: '0.675rem', color: 'var(--text-muted)' }}>
-              SLA Ketepatan: <strong style={{ color: 'var(--accent-success)' }}>96.8%</strong>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: '0.775rem', fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                Admin Operasional
+              </div>
+              <div style={{ fontSize: '0.675rem', color: 'var(--accent-success)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <ShieldCheck size={11} /> Cloud Connected
+              </div>
             </div>
           </div>
         </div>

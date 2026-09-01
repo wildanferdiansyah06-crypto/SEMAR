@@ -4,30 +4,23 @@ import { useState, useMemo } from 'react';
 import {
   ShoppingBag,
   Search,
-  Filter,
-  Eye,
   Plus,
-  ArrowUpDown,
-  CheckCircle2,
-  Clock,
-  AlertTriangle,
-  FileText,
-  DollarSign,
-  Store,
+  Eye,
   Bike,
+  RefreshCw,
+  SlidersHorizontal,
 } from 'lucide-react';
 import OrderDetailModal from '@/components/OrderDetailModal';
-import { INITIAL_ORDERS, formatIDR } from '@/lib/jastipData';
+import { useJastipLive } from '@/hooks/useJastipLive';
+import { formatIDR } from '@/lib/jastipData';
 import { JastipOrder, OrderStatus } from '@/types/jastip';
 
 export default function OrdersPage() {
-  const [orders] = useState<JastipOrder[]>(INITIAL_ORDERS);
+  const { orders, isRefreshing, refetch } = useJastipLive();
   const [selectedOrder, setSelectedOrder] = useState<JastipOrder | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [paymentFilter, setPaymentFilter] = useState<string>('all');
-  const [sortKey, setSortKey] = useState<string>('createdAt');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
@@ -47,7 +40,7 @@ export default function OrdersPage() {
   const getStatusBadge = (status: OrderStatus) => {
     switch (status) {
       case 'pending':
-        return <span className="badge-status badge-pending">Menunggu Konfirmasi</span>;
+        return <span className="badge-status badge-pending">Menunggu</span>;
       case 'shopping':
         return <span className="badge-status badge-shopping">Sedang Belanja</span>;
       case 'packing':
@@ -79,8 +72,7 @@ export default function OrdersPage() {
       {/* Header */}
       <div className="page-header">
         <div className="page-title-area">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-            <ShoppingBag size={20} style={{ color: 'var(--accent-primary-light)' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 2 }}>
             <h1 className="page-title">Manajemen Pesanan & Belanja Jastip</h1>
           </div>
           <p className="page-subtitle">
@@ -88,12 +80,22 @@ export default function OrdersPage() {
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button
+            className="btn btn-secondary"
+            onClick={() => refetch()}
+            disabled={isRefreshing}
+            style={{ padding: '7px 12px', fontSize: '0.775rem' }}
+          >
+            <RefreshCw size={13} className={isRefreshing ? 'spin-pulse' : ''} />
+            {isRefreshing ? 'Sync...' : 'Sync Data'}
+          </button>
+
           <button
             className="btn btn-primary"
-            onClick={() => alert('Form input pesanan jastip baru siap dibuka.')}
+            onClick={() => alert('Form input titipan baru siap dibuka.')}
           >
-            <Plus size={16} /> Buat Titipan Baru
+            <Plus size={15} /> Buat Titipan Baru
           </button>
         </div>
       </div>
@@ -210,7 +212,7 @@ export default function OrdersPage() {
                         </div>
                       </td>
                       <td>
-                        <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{order.customerName}</div>
+                        <div style={{ fontWeight: 600, color: '#ffffff' }}>{order.customerName}</div>
                         <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{order.district}</div>
                       </td>
                       <td>
@@ -235,15 +237,15 @@ export default function OrdersPage() {
                       <td>{getStatusBadge(order.status)}</td>
                       <td style={{ color: 'var(--text-secondary)' }}>{formatIDR(order.totalGoodsCost)}</td>
                       <td style={{ fontWeight: 600, color: 'var(--accent-success)' }}>+{formatIDR(order.totalJastipFee)}</td>
-                      <td style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{formatIDR(order.totalAmount)}</td>
+                      <td style={{ fontWeight: 700, color: '#ffffff' }}>{formatIDR(order.totalAmount)}</td>
                       <td>{getPaymentBadge(order.paymentStatus)}</td>
                       <td>
                         <button
                           className="btn btn-secondary"
-                          style={{ padding: '6px 10px', fontSize: '0.75rem' }}
+                          style={{ padding: '5px 10px', fontSize: '0.725rem' }}
                           onClick={() => setSelectedOrder(order)}
                         >
-                          <Eye size={13} /> Rincian
+                          <Eye size={12} /> Rincian
                         </button>
                       </td>
                     </tr>
