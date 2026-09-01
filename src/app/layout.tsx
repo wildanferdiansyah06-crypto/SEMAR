@@ -4,15 +4,15 @@ import Sidebar from '@/components/Sidebar';
 
 export const metadata: Metadata = {
   title: {
-    default: 'DataVision Dashboard',
-    template: '%s | DataVision',
+    default: 'SEMAR - ERP Dashboard Jastip UMKM',
+    template: '%s | SEMAR Jastip ERP',
   },
   description:
-    'Dashboard analitik terintegrasi dengan Google Looker Studio dan Google Sheets — data realtime untuk keputusan bisnis lebih cepat.',
-  keywords: ['dashboard', 'analytics', 'looker studio', 'google sheets', 'data visualization'],
+    'Platform ERP & Analitik Jasa Titip (Jastip) UMKM: manajemen performa driver, analitik waktu & SLA, CRM pelanggan, pelacakan belanja, dan dana talangan kas.',
+  keywords: ['jastip', 'erp jastip', 'umkm', 'dashboard', 'analytics', 'driver performance', 'sla time', 'looker studio'],
   openGraph: {
-    title: 'DataVision Dashboard',
-    description: 'Dashboard analitik terintegrasi Google Looker Studio & Sheets',
+    title: 'SEMAR - ERP Dashboard Jastip UMKM',
+    description: 'Platform ERP & Analitik Jasa Titip (Jastip) UMKM Indonesia',
     type: 'website',
   },
 };

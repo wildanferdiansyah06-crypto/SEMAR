@@ -1,16 +1,36 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import {
-  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+  Clock,
+  TrendingUp,
+  AlertCircle,
+  CheckCircle2,
+  Hourglass,
+  Store,
+  Flame,
+  Zap,
+  BarChart3,
+  Calendar,
+} from 'lucide-react';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  AreaChart,
+  Area,
 } from 'recharts';
-import { BarChart3, ArrowUpDown, Search } from 'lucide-react';
 import MetricCard from '@/components/MetricCard';
-import RefreshIndicator from '@/components/RefreshIndicator';
-import { useSheetData } from '@/hooks/useSheetData';
-
-const COLORS = ['#6366f1', '#06b6d4', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
+import {
+  TIME_SLA_STAGES,
+  HOURLY_PATTERNS,
+  INITIAL_STORES,
+  formatIDR,
+} from '@/lib/jastipData';
 
 const CustomTooltipStyle = {
   background: 'var(--bg-elevated)',
@@ -19,74 +39,34 @@ const CustomTooltipStyle = {
   color: 'var(--text-primary)',
   fontSize: '0.8rem',
   padding: '10px 14px',
+  boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
 };
 
-function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; color: string }[]; label?: string }) {
+function HourlyTooltip({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) {
   if (!active || !payload?.length) return null;
+  const isPeak = payload[0].payload.isPeak;
   return (
     <div style={CustomTooltipStyle}>
-      <div style={{ marginBottom: 6, fontWeight: 600, color: 'var(--text-secondary)' }}>{label}</div>
-      {payload.map((p, i) => (
-        <div key={i} style={{ color: p.color, display: 'flex', gap: 8, alignItems: 'center' }}>
-          <span style={{ width: 8, height: 8, borderRadius: '50%', background: p.color, display: 'inline-block' }} />
-          <span>{p.name}: <strong>{Number(p.value).toLocaleString('id-ID')}</strong></span>
-        </div>
-      ))}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, fontWeight: 700 }}>
+        <span>Pukul {label}</span>
+        {isPeak && (
+          <span style={{ fontSize: '0.65rem', background: 'rgba(239,68,68,0.2)', color: '#ef4444', padding: '1px 6px', borderRadius: 4 }}>
+            🔥 Jam Sibuk
+          </span>
+        )}
+      </div>
+      <div style={{ fontSize: '0.75rem', color: 'var(--accent-primary-light)' }}>
+        Masuk: <strong>{payload[0].value} Pesanan</strong>
+      </div>
+      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 2 }}>
+        Est. Belanja: <strong>{formatIDR(payload[0].payload.gmv)}</strong>
+      </div>
     </div>
   );
 }
 
 export default function AnalyticsPage() {
-  const { data, isLoading, isRefreshing, countdown, error, refetch } = useSheetData();
-  const [sortKey, setSortKey] = useState<string>('');
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
-  const [search, setSearch] = useState('');
-
-  const chartData = useMemo(() => {
-    return data.rows.slice(0, 12).map((row) => {
-      const obj: Record<string, string | number> = {};
-      data.headers.forEach((h) => { obj[h] = row[h]; });
-      return obj;
-    });
-  }, [data]);
-
-  const pieData = useMemo(() => {
-    const numericCol = data.headers.find((h) => typeof data.rows[0]?.[h] === 'number');
-    if (!numericCol) return [];
-    return data.rows.slice(0, 5).map((row, i) => ({
-      name: String(row[data.headers[0]] ?? `Item ${i + 1}`),
-      value: Number(row[numericCol]) || 0,
-    }));
-  }, [data]);
-
-  const filteredRows = useMemo(() => {
-    let rows = [...data.rows];
-    if (search) {
-      rows = rows.filter((row) =>
-        Object.values(row).some((v) => String(v).toLowerCase().includes(search.toLowerCase()))
-      );
-    }
-    if (sortKey) {
-      rows.sort((a, b) => {
-        const av = a[sortKey], bv = b[sortKey];
-        if (typeof av === 'number' && typeof bv === 'number') {
-          return sortDir === 'asc' ? av - bv : bv - av;
-        }
-        return sortDir === 'asc'
-          ? String(av).localeCompare(String(bv))
-          : String(bv).localeCompare(String(av));
-      });
-    }
-    return rows;
-  }, [data.rows, search, sortKey, sortDir]);
-
-  const handleSort = (key: string) => {
-    if (sortKey === key) setSortDir((d) => d === 'asc' ? 'desc' : 'asc');
-    else { setSortKey(key); setSortDir('desc'); }
-  };
-
-  const numericHeaders = data.headers.filter((h) => typeof data.rows[0]?.[h] === 'number');
-  const firstHeader = data.headers[0] || 'Name';
+  const [activeStage, setActiveStage] = useState<string>('all');
 
   return (
     <div className="fade-in">
@@ -94,169 +74,208 @@ export default function AnalyticsPage() {
       <div className="page-header">
         <div className="page-title-area">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-            <BarChart3 size={20} style={{ color: 'var(--accent-secondary)' }} />
-            <h1 className="page-title">Analitik</h1>
+            <Clock size={20} style={{ color: 'var(--accent-secondary)' }} />
+            <h1 className="page-title">Analitik Waktu & Efisiensi SLA Jastip</h1>
           </div>
-          <p className="page-subtitle">Visualisasi chart langsung dari Google Sheets</p>
+          <p className="page-subtitle">
+            Evaluasi kecepatan rantai operasional: verifikasi pesanan, durasi belanja di pasar/mall, packing, hingga waktu tempuh kurir
+          </p>
         </div>
-        <RefreshIndicator
-          isRefreshing={isRefreshing}
-          countdown={countdown}
-          lastUpdated={data.lastUpdated}
-          error={error}
-          onRefresh={refetch}
-        />
       </div>
 
       <div className="page-wrapper">
-        {/* Metric summary */}
+        {/* Metric Cards Grid */}
         <div className="metric-grid section-gap">
-          {data.metrics.slice(0, 4).map((m, i) => (
-            <MetricCard key={i} metric={m} isLoading={isLoading} color={COLORS[i]} />
-          ))}
+          <MetricCard
+            metric={{
+              label: 'Total Waktu Siklus (Cycle Time)',
+              value: '1j 47m',
+              delta: -12.0,
+              deltaLabel: 'lebih efisien',
+              subtext: 'Target batas SLA: 2j 30m',
+            }}
+            icon={<Hourglass size={18} />}
+            color="#6366f1"
+          />
+
+          <MetricCard
+            metric={{
+              label: 'Waktu Verifikasi Order',
+              value: '7.5',
+              suffix: ' mnt',
+              delta: -15.2,
+              deltaLabel: 'respon cepat',
+              subtext: 'Pengecekan instruksi & DP',
+            }}
+            icon={<Zap size={18} />}
+            color="#06b6d4"
+          />
+
+          <MetricCard
+            metric={{
+              label: 'Waktu Belanja di Lokasi',
+              value: '36.2',
+              suffix: ' mnt',
+              delta: -6.5,
+              deltaLabel: 'speed belanja',
+              subtext: 'Rata-rata 2.8 item / toko',
+            }}
+            icon={<Store size={18} />}
+            color="#10b981"
+          />
+
+          <MetricCard
+            metric={{
+              label: 'Waktu Pengantaran Kurir',
+              value: '27.8',
+              suffix: ' mnt',
+              delta: -4.1,
+              deltaLabel: 'waktu tempuh',
+              subtext: 'Kecepatan motor & rute optimal',
+            }}
+            icon={<Clock size={18} />}
+            color="#f59e0b"
+          />
         </div>
 
-        {/* Charts row */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
-          {/* Area chart */}
-          <div className="card chart-container">
-            <div className="chart-title">Tren Data</div>
-            <div className="chart-subtitle">Dari Google Sheets — {numericHeaders[0] || 'Nilai'}</div>
-            <ResponsiveContainer width="100%" height={260}>
-              <AreaChart data={chartData}>
-                <defs>
-                  <linearGradient id="grad1" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="grad2" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey={firstHeader} tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <Tooltip content={<CustomTooltip />} />
-                {numericHeaders.slice(0, 2).map((h, i) => (
-                  <Area
-                    key={h}
-                    type="monotone"
-                    dataKey={h}
-                    stroke={COLORS[i]}
-                    fill={`url(#grad${i + 1})`}
-                    strokeWidth={2}
-                    dot={{ fill: COLORS[i], r: 3 }}
-                    activeDot={{ r: 5 }}
-                  />
-                ))}
-              </AreaChart>
-            </ResponsiveContainer>
+        {/* SLA Breakdown Funnel Cards */}
+        <div className="section-gap">
+          <div className="chart-title" style={{ marginBottom: 4 }}>
+            Breakdown Target vs Waktu Aktual Tiap Tahap
+          </div>
+          <div className="chart-subtitle" style={{ marginBottom: 16 }}>
+            Setiap tahap diawasi dengan toleransi deviasi otomatis untuk mencegah keterlambatan
           </div>
 
-          {/* Bar chart */}
-          <div className="card chart-container">
-            <div className="chart-title">Perbandingan</div>
-            <div className="chart-subtitle">Distribusi per periode</div>
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={chartData} barGap={4}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                <XAxis dataKey={firstHeader} tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <Tooltip content={<CustomTooltip />} />
-                {numericHeaders.slice(0, 3).map((h, i) => (
-                  <Bar key={h} dataKey={h} fill={COLORS[i]} radius={[4, 4, 0, 0]} maxBarSize={40} />
-                ))}
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14 }}>
+            {TIME_SLA_STAGES.map((stage, idx) => {
+              const percentOfTarget = Math.round((stage.actualMins / stage.targetMins) * 100);
+              return (
+                <div key={idx} className="sla-card">
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                      {stage.stage}
+                    </span>
+                    <span className="badge badge-success" style={{ fontSize: '0.675rem' }}>
+                      Optimal
+                    </span>
+                  </div>
 
-        {/* Pie + Table */}
-        <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 20, marginBottom: 24 }}>
-          {/* Pie */}
-          <div className="card chart-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div className="chart-title" style={{ alignSelf: 'flex-start' }}>Distribusi</div>
-            <div className="chart-subtitle" style={{ alignSelf: 'flex-start' }}>Top 5 data</div>
-            <ResponsiveContainer width="100%" height={220}>
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={90}
-                  paddingAngle={3}
-                  dataKey="value"
-                >
-                  {pieData.map((_, i) => (
-                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip content={<CustomTooltip />} />
-              </PieChart>
-            </ResponsiveContainer>
-            {/* Legend */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, width: '100%' }}>
-              {pieData.map((item, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.75rem' }}>
-                  <span style={{ width: 10, height: 10, borderRadius: 2, background: COLORS[i % COLORS.length], flexShrink: 0 }} />
-                  <span style={{ color: 'var(--text-secondary)', flex: 1 }}>{item.name}</span>
-                  <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{item.value.toLocaleString('id-ID')}</span>
+                  <p style={{ fontSize: '0.725rem', color: 'var(--text-muted)', minHeight: 32, marginBottom: 10 }}>
+                    {stage.description}
+                  </p>
+
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>
+                      Aktual: <strong style={{ color: 'var(--accent-primary-light)' }}>{stage.actualMins} mnt</strong>
+                    </span>
+                    <span style={{ color: 'var(--text-muted)' }}>
+                      Target: <strong>{stage.targetMins} mnt</strong>
+                    </span>
+                  </div>
+
+                  <div className="progress-bar-container">
+                    <div
+                      className="progress-bar-fill"
+                      style={{
+                        width: `${Math.min(percentOfTarget, 100)}%`,
+                        background: percentOfTarget < 85 ? 'var(--accent-success)' : 'var(--accent-warning)',
+                      }}
+                    />
+                  </div>
                 </div>
-              ))}
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Hourly Peak Hours Heatmap Chart */}
+        <div className="card chart-container section-gap">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div>
+              <div className="chart-title">Pola Waktu Jam Sibuk Masuknya Pesanan (07:00 - 20:00)</div>
+              <div className="chart-subtitle">Distribusi jam masuk order untuk pengaturan penugasan shift driver & shopper</div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.75rem', color: '#ef4444' }}>
+              <Flame size={14} /> Peak: 09:00 - 11:00 & 15:00 - 17:00
             </div>
           </div>
 
-          {/* Data Table */}
-          <div className="card" style={{ overflow: 'hidden' }}>
-            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-              <div>
-                <div className="chart-title">Tabel Data</div>
-                <div className="chart-subtitle" style={{ marginBottom: 0 }}>
-                  {filteredRows.length} baris dari Google Sheets
-                </div>
-              </div>
-              <div style={{ position: 'relative' }}>
-                <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                <input
-                  className="filter-input"
-                  placeholder="Cari data..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  style={{ paddingLeft: 32, width: 180 }}
-                />
-              </div>
+          <ResponsiveContainer width="100%" height={260}>
+            <BarChart data={HOURLY_PATTERNS}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+              <XAxis dataKey="hour" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} unit=" ord" />
+              <Tooltip content={<HourlyTooltip />} />
+              <Bar
+                dataKey="ordersCount"
+                name="Jumlah Pesanan"
+                fill="#6366f1"
+                radius={[4, 4, 0, 0]}
+                maxBarSize={28}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Store Shopping Efficiency & Fulfillment Table */}
+        <div className="card" style={{ overflow: 'hidden' }}>
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)' }}>
+            <div className="chart-title">Efisiensi Belanja & Tingkat Keberhasilan Stok per Toko / Pasar</div>
+            <div className="chart-subtitle" style={{ marginBottom: 0 }}>
+              Evaluasi waktu yang dihabiskan shopper dan ketersediaan stok barang titipan
             </div>
-            <div className="data-table-wrapper" style={{ borderRadius: 0, border: 'none', maxHeight: 300, overflowY: 'auto' }}>
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    {data.headers.map((h) => (
-                      <th key={h} onClick={() => handleSort(h)}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          {h}
-                          <ArrowUpDown size={10} style={{ opacity: sortKey === h ? 1 : 0.3 }} />
+          </div>
+
+          <div className="data-table-wrapper" style={{ border: 'none', borderRadius: 0 }}>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Nama Pasar / Toko</th>
+                  <th>Kategori Barang</th>
+                  <th>Lokasi</th>
+                  <th>Total Pesanan Dititip</th>
+                  <th>Rata-rata Waktu Belanja</th>
+                  <th>Tingkat Sukses Stok (Fulfillment)</th>
+                  <th>Barang Terpopuler</th>
+                </tr>
+              </thead>
+              <tbody>
+                {INITIAL_STORES.map((store) => (
+                  <tr key={store.id}>
+                    <td>
+                      <strong style={{ color: 'var(--text-primary)' }}>{store.name}</strong>
+                    </td>
+                    <td>
+                      <span className="badge badge-primary">{store.category}</span>
+                    </td>
+                    <td>{store.location}</td>
+                    <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{store.totalOrders} Titipan</td>
+                    <td>
+                      <span style={{ fontWeight: 600, color: 'var(--accent-secondary)' }}>
+                        {store.avgShoppingMins} Menit
+                      </span>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontWeight: 700, color: 'var(--accent-success)' }}>
+                          {store.fulfillmentRate}%
                         </span>
-                      </th>
-                    ))}
+                        <div className="progress-bar-container" style={{ width: 60, height: 4, margin: 0 }}>
+                          <div
+                            className="progress-bar-fill"
+                            style={{ width: `${store.fulfillmentRate}%`, background: 'var(--accent-success)' }}
+                          />
+                        </div>
+                      </div>
+                    </td>
+                    <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      {store.popularItems.slice(0, 2).join(', ')}
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {filteredRows.map((row, i) => (
-                    <tr key={i}>
-                      {data.headers.map((h) => (
-                        <td key={h}>
-                          {typeof row[h] === 'number'
-                            ? Number(row[h]).toLocaleString('id-ID')
-                            : String(row[h])}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>

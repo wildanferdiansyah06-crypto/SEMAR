@@ -1,112 +1,36 @@
+import { JastipOrder, DriverPerformance, CustomerProfile, StoreMarket, OrderStatus, PaymentStatus } from '@/types/jastip';
 import { DashboardConfig, SheetData } from '@/types';
+import { INITIAL_DRIVERS, INITIAL_ORDERS, INITIAL_STORES } from '@/lib/jastipData';
 
-const DEFAULT_CONFIG: DashboardConfig = {
-  lookerEmbedUrl: '',
-  sheetsId: '',
-  apiKey: '',
-  sheetsRange: 'Sheet1!A1:Z100',
-  refreshInterval: 30,
-  reportName: 'My Dashboard',
-};
-
-// ─── Config helpers (Environment Variables) ────────────────────────────
+// ─── Config helpers ────────────────────────────────────────────
 export function getConfig(): DashboardConfig {
   return {
     lookerEmbedUrl: process.env.NEXT_PUBLIC_LOOKER_EMBED_URL || '',
     sheetsId: process.env.NEXT_PUBLIC_SHEETS_ID || '',
     apiKey: process.env.NEXT_PUBLIC_SHEETS_API_KEY || '',
-    sheetsRange: process.env.NEXT_PUBLIC_SHEETS_RANGE || 'Sheet1!A1:Z100',
+    sheetsRange: process.env.NEXT_PUBLIC_SHEETS_RANGE || 'Sheet1!A1:Z500',
     refreshInterval: Number(process.env.NEXT_PUBLIC_REFRESH_INTERVAL) || 30,
-    reportName: process.env.NEXT_PUBLIC_REPORT_NAME || 'SEMAR Dashboard',
+    reportName: process.env.NEXT_PUBLIC_REPORT_NAME || 'SEMAR Jastip ERP',
   };
 }
 
 export function saveConfig(config: Partial<DashboardConfig>): void {
-  console.warn('Konfigurasi sekarang menggunakan Environment Variables dan tidak dapat diubah dari website.');
+  console.warn('Konfigurasi menggunakan Environment Variables.');
 }
 
-// ─── Google Sheets API ─────────────────────────────────────────
-export async function fetchSheetData(
-  sheetsId: string,
-  range: string,
-  apiKey: string
-): Promise<SheetData> {
-  if (!sheetsId || !apiKey) {
-    return getMockData();
-  }
-
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetsId}/values/${encodeURIComponent(range)}?key=${apiKey}`;
-
-  const res = await fetch(url, { cache: 'no-store' });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err?.error?.message || `Sheets API error: ${res.status}`);
-  }
-
-  const data = await res.json();
-  return parseSheetResponse(data);
-}
-
-function parseSheetResponse(data: { values?: string[][] }): SheetData {
-  const values = data.values || [];
-  if (values.length === 0) return getMockData();
-
-  const headers = values[0].map(String);
-  const rows = values.slice(1).map((row) => {
-    const obj: Record<string, string | number> = {};
-    headers.forEach((h, i) => {
-      const val = row[i] ?? '';
-      obj[h] = isNaN(Number(val)) || val === '' ? val : Number(val);
+export function formatDate(iso: string): string {
+  try {
+    return new Date(iso).toLocaleString('id-ID', {
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
     });
-    return obj;
-  });
-
-  // Auto-detect metric rows (first 4 numeric columns)
-  const metrics = headers.slice(0, 4).map((label, i) => {
-    const colVals = rows.map((r) => Number(r[label]) || 0).filter(Boolean);
-    const latest = colVals[colVals.length - 1] ?? 0;
-    const prev = colVals[colVals.length - 2] ?? latest;
-    const delta = prev !== 0 ? ((latest - prev) / prev) * 100 : 0;
-    return {
-      label,
-      value: latest,
-      delta: parseFloat(delta.toFixed(1)),
-      deltaLabel: 'vs sebelumnya',
-    };
-  });
-
-  return {
-    metrics,
-    rows,
-    headers,
-    lastUpdated: new Date().toISOString(),
-  };
+  } catch {
+    return iso;
+  }
 }
 
-// ─── Mock / Demo Data ──────────────────────────────────────────
-export function getMockData(): SheetData {
-  return {
-    metrics: [
-      { label: 'Total Penjualan', value: 'Rp 128,5 Jt', delta: 12.4, deltaLabel: 'vs bulan lalu', prefix: '' },
-      { label: 'Transaksi', value: 3_847, delta: 8.1, deltaLabel: 'vs bulan lalu' },
-      { label: 'Pelanggan Baru', value: 1_203, delta: -3.2, deltaLabel: 'vs bulan lalu' },
-      { label: 'Rata-rata Order', value: 'Rp 334 K', delta: 5.7, deltaLabel: 'vs bulan lalu' },
-    ],
-    rows: [
-      { Tanggal: '2024-01', Penjualan: 95000000, Transaksi: 2840, Pelanggan: 980 },
-      { Tanggal: '2024-02', Penjualan: 102000000, Transaksi: 3100, Pelanggan: 1050 },
-      { Tanggal: '2024-03', Penjualan: 118000000, Transaksi: 3350, Pelanggan: 1150 },
-      { Tanggal: '2024-04', Penjualan: 111000000, Transaksi: 3200, Pelanggan: 1100 },
-      { Tanggal: '2024-05', Penjualan: 125000000, Transaksi: 3600, Pelanggan: 1180 },
-      { Tanggal: '2024-06', Penjualan: 128500000, Transaksi: 3847, Pelanggan: 1203 },
-    ],
-    headers: ['Tanggal', 'Penjualan', 'Transaksi', 'Pelanggan'],
-    lastUpdated: new Date().toISOString(),
-  };
-}
-
-// ─── Looker Studio URL builder ─────────────────────────────────
 export function buildLookerUrl(
   baseUrl: string,
   params: {
@@ -118,11 +42,9 @@ export function buildLookerUrl(
   if (!baseUrl) return '';
   try {
     const url = new URL(baseUrl);
-    // Looker Studio supports params via "params" query string (JSON encoded)
     const lookerParams: Record<string, string> = {};
     if (params.dateFrom) lookerParams['df1'] = `EQ${params.dateFrom.replace(/-/g, '')}`;
     if (params.dateTo) lookerParams['df2'] = `EQ${params.dateTo.replace(/-/g, '')}`;
-    // Extra custom params
     Object.entries(params).forEach(([k, v]) => {
       if (v && k !== 'dateFrom' && k !== 'dateTo') lookerParams[k] = v;
     });
@@ -135,28 +57,211 @@ export function buildLookerUrl(
   }
 }
 
-// ─── Format helpers ────────────────────────────────────────────
-export function formatNumber(n: number): string {
-  if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1)}B`;
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return String(n);
+export function getMockData(): SheetData {
+  return {
+    metrics: [
+      { label: 'Total Belanja (GMV)', value: 'Rp 42,1 Jt', delta: 14.8, deltaLabel: 'vs kemarin' },
+      { label: 'Laba Fee Jastip', value: 'Rp 7,41 Jt', delta: 17.3, deltaLabel: 'margin bersih' },
+      { label: 'Dana Talangan Aktif', value: 'Rp 6,98 Jt', delta: -5.2, deltaLabel: 'uang kas luar' },
+      { label: 'On-Time SLA', value: '96.8%', delta: 2.1, deltaLabel: 'kecepatan' },
+    ],
+    rows: [
+      { Tanggal: '2026-09-01', Penjualan: 42100000, Transaksi: 102, Pelanggan: 88 },
+      { Tanggal: '2026-08-31', Penjualan: 38900000, Transaksi: 94, Pelanggan: 82 },
+      { Tanggal: '2026-08-30', Penjualan: 31600000, Transaksi: 78, Pelanggan: 70 },
+    ],
+    headers: ['Tanggal', 'Penjualan', 'Transaksi', 'Pelanggan'],
+    lastUpdated: new Date().toISOString(),
+  };
 }
 
-export function formatCurrency(n: number, currency = 'IDR'): string {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(n);
+export async function fetchSheetData(
+  sheetsId: string,
+  range: string,
+  apiKey: string
+): Promise<SheetData> {
+  if (!sheetsId) return getMockData();
+  return getMockData();
 }
 
-export function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+export function parseIndonesianCurrency(val: any): number {
+  if (typeof val === 'number') return val;
+  if (!val) return 0;
+  const cleaned = String(val)
+    .replace(/Rp/gi, '')
+    .replace(/\s+/g, '')
+    .replace(/\./g, '')
+    .replace(/,/g, '.')
+    .replace(/-/g, '0');
+  const num = parseFloat(cleaned);
+  return isNaN(num) ? 0 : num;
+}
+
+export function parseCSV(text: string): string[][] {
+  const lines: string[][] = [];
+  let row: string[] = [];
+  let inQuotes = false;
+  let currentField = '';
+
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    const nextChar = text[i + 1];
+
+    if (char === '"') {
+      if (inQuotes && nextChar === '"') {
+        currentField += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === ',' && !inQuotes) {
+      row.push(currentField.trim());
+      currentField = '';
+    } else if ((char === '\r' || char === '\n') && !inQuotes) {
+      if (char === '\r' && nextChar === '\n') i++;
+      row.push(currentField.trim());
+      if (row.some((field) => field.length > 0)) {
+        lines.push(row);
+      }
+      row = [];
+      currentField = '';
+    } else {
+      currentField += char;
+    }
+  }
+  if (currentField.length > 0 || row.length > 0) {
+    row.push(currentField.trim());
+    if (row.some((field) => field.length > 0)) {
+      lines.push(row);
+    }
+  }
+  return lines;
+}
+
+export async function fetchLiveJastipSheetData(sheetsId: string): Promise<JastipOrder[]> {
+  if (!sheetsId) return INITIAL_ORDERS;
+
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${sheetsId}/gviz/tq?tqx=out:csv`;
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) {
+      console.warn('Failed to fetch GViz CSV, fallback to initial orders');
+      return INITIAL_ORDERS;
+    }
+    const text = await res.text();
+    const rows = parseCSV(text);
+    if (rows.length < 2) return INITIAL_ORDERS;
+
+    const headers = rows[0].map((h) => h.toLowerCase().replace(/[^a-z0-9]/g, ''));
+    const dataRows = rows.slice(1);
+
+    const getColIndex = (name: string) => {
+      return headers.findIndex((h) => h.includes(name.toLowerCase()));
+    };
+
+    const idxInvoice = getColIndex('invoice');
+    const idxWaktu = getColIndex('waktu');
+    const idxCustomer = getColIndex('customer');
+    const idxWhatsApp = getColIndex('whatsapp') !== -1 ? getColIndex('whatsapp') : getColIndex('hp');
+    const idxWilayah = getColIndex('wilayah') !== -1 ? getColIndex('wilayah') : getColIndex('kecamatan');
+    const idxAlamat = getColIndex('alamat');
+    const idxToko = getColIndex('toko') !== -1 ? getColIndex('toko') : getColIndex('pasar');
+    const idxKategori = getColIndex('kategori');
+    const idxBarang = getColIndex('rincian') !== -1 ? getColIndex('rincian') : getColIndex('barang');
+    const idxDriver = getColIndex('driver') !== -1 ? getColIndex('driver') : getColIndex('shopper');
+    const idxModal = getColIndex('modal') !== -1 ? getColIndex('modal') : getColIndex('belanja');
+    const idxFee = getColIndex('fee');
+    const idxOngkir = getColIndex('ongkir');
+    const idxTotal = getColIndex('total');
+    const idxDP = getColIndex('dp');
+    const idxPayStatus = getColIndex('pembayaran');
+    const idxOrderStatus = getColIndex('pesanan') !== -1 ? getColIndex('pesanan') : getColIndex('status');
+    const idxDurasiBelanja = getColIndex('durasibelanja');
+    const idxDurasiAntar = getColIndex('durasiantar');
+    const idxOnTime = getColIndex('ontime');
+    const idxRating = getColIndex('rating');
+
+    const orders: JastipOrder[] = dataRows.map((row, i) => {
+      const invoice = row[idxInvoice] || `INV-JST-${i + 1}`;
+      const customer = row[idxCustomer] || `Pelanggan ${i + 1}`;
+      const phone = row[idxWhatsApp] || '';
+      const district = row[idxWilayah] || 'Jakarta';
+      const address = row[idxAlamat] || district;
+      const store = row[idxToko] || 'Toko Mitra';
+      const category = row[idxKategori] || 'Umum';
+      const itemsRaw = row[idxBarang] || 'Titipan Barang';
+      const driver = row[idxDriver] || '';
+      const goodsCost = parseIndonesianCurrency(row[idxModal]);
+      const jastipFee = parseIndonesianCurrency(row[idxFee]);
+      const shipping = parseIndonesianCurrency(row[idxOngkir]);
+      const totalAmount = parseIndonesianCurrency(row[idxTotal]) || goodsCost + jastipFee + shipping;
+      const deposit = parseIndonesianCurrency(row[idxDP]);
+      const outstanding = Math.max(0, totalAmount - deposit);
+
+      const rawOrderStatus = (row[idxOrderStatus] || '').toLowerCase();
+      let status: OrderStatus = 'pending';
+      if (rawOrderStatus.includes('selesai') || rawOrderStatus.includes('terima')) status = 'delivered';
+      else if (rawOrderStatus.includes('kirim') || rawOrderStatus.includes('antar') || rawOrderStatus.includes('jalan')) status = 'delivering';
+      else if (rawOrderStatus.includes('belanja')) status = 'shopping';
+      else if (rawOrderStatus.includes('pack')) status = 'packing';
+      else if (rawOrderStatus.includes('batal') || rawOrderStatus.includes('habis') || rawOrderStatus.includes('masalah')) status = 'issue';
+
+      const rawPayStatus = (row[idxPayStatus] || '').toLowerCase();
+      let payStatus: PaymentStatus = 'paid';
+      if (rawPayStatus.includes('dp')) payStatus = 'dp';
+      else if (rawPayStatus.includes('cod')) payStatus = 'cod';
+      else if (rawPayStatus.includes('struk') || rawPayStatus.includes('pending')) payStatus = 'pending_receipt';
+      else if (rawPayStatus.includes('lunas')) payStatus = 'paid';
+
+      const shoppingMins = parseInt(row[idxDurasiBelanja]) || 30;
+      const deliveryMins = parseInt(row[idxDurasiAntar]) || 20;
+      const onTimeStr = (row[idxOnTime] || '').toLowerCase();
+      const isOnTime = !onTimeStr.includes('terlambat');
+
+      return {
+        id: `ord-${i + 1}`,
+        invoiceNumber: invoice,
+        createdAt: row[idxWaktu] || new Date().toISOString(),
+        customerName: customer,
+        customerPhone: phone,
+        deliveryAddress: address,
+        district: district,
+        storeName: store,
+        storeCategory: category,
+        driverName: driver,
+        status: status,
+        paymentStatus: payStatus,
+        items: itemsRaw.split(',').map((itemStr, itemIdx) => ({
+          id: `itm-${i}-${itemIdx}`,
+          name: itemStr.trim(),
+          category: category,
+          quantity: 1,
+          unit: 'pcs',
+          estimatedPrice: goodsCost,
+          actualPrice: goodsCost,
+          jastipFee: jastipFee,
+          status: 'purchased',
+          storeName: store,
+        })),
+        totalGoodsCost: goodsCost,
+        totalJastipFee: jastipFee,
+        shippingFee: shipping,
+        totalAmount: totalAmount,
+        depositPaid: deposit,
+        outstandingAmount: outstanding,
+        verificationTimeMins: 5,
+        shoppingTimeMins: shoppingMins,
+        packingTimeMins: 10,
+        deliveryTimeMins: deliveryMins,
+        totalCycleTimeMins: 5 + shoppingMins + 10 + deliveryMins,
+        targetSLATimeMins: 120,
+        isOnTime: isOnTime,
+      };
+    });
+
+    return orders.length > 0 ? orders : INITIAL_ORDERS;
+  } catch (err) {
+    console.error('Error fetching live Google Sheet data:', err);
+    return INITIAL_ORDERS;
+  }
 }

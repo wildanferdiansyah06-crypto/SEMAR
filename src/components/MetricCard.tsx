@@ -1,11 +1,20 @@
 'use client';
 
-import { SheetMetric } from '@/types';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { ReactNode } from 'react';
 
+export interface MetricCardData {
+  label: string;
+  value: string | number;
+  delta?: number;
+  deltaLabel?: string;
+  prefix?: string;
+  suffix?: string;
+  subtext?: string;
+}
+
 interface MetricCardProps {
-  metric: SheetMetric;
+  metric: MetricCardData;
   icon?: ReactNode;
   color?: string;
   isLoading?: boolean;
@@ -53,17 +62,24 @@ export default function MetricCard({ metric, icon, color = '#6366f1', isLoading 
           : metric.value}{metric.suffix}
       </div>
 
-      {metric.delta !== undefined && (
-        <div className={`metric-delta ${isUp ? 'up' : isDown ? 'down' : ''}`}>
-          {isUp && <TrendingUp size={12} />}
-          {isDown && <TrendingDown size={12} />}
-          {!isUp && !isDown && <Minus size={12} />}
-          <span>{isUp ? '+' : ''}{deltaAbs}%</span>
-          {metric.deltaLabel && (
-            <span style={{ fontWeight: 400, opacity: 0.7 }}>&nbsp;{metric.deltaLabel}</span>
-          )}
-        </div>
-      )}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6 }}>
+        {metric.delta !== undefined && (
+          <div className={`metric-delta ${isUp ? 'up' : isDown ? 'down' : ''}`}>
+            {isUp && <TrendingUp size={12} />}
+            {isDown && <TrendingDown size={12} />}
+            {!isUp && !isDown && <Minus size={12} />}
+            <span>{isUp ? '+' : ''}{deltaAbs}%</span>
+            {metric.deltaLabel && (
+              <span style={{ fontWeight: 400, opacity: 0.7 }}>&nbsp;{metric.deltaLabel}</span>
+            )}
+          </div>
+        )}
+        {metric.subtext && (
+          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+            {metric.subtext}
+          </span>
+        )}
+      </div>
     </div>
   );
 }
