@@ -8,7 +8,7 @@ export function getConfig(): DashboardConfig {
     lookerEmbedUrl: process.env.NEXT_PUBLIC_LOOKER_EMBED_URL || '',
     sheetsId: process.env.NEXT_PUBLIC_SHEETS_ID || '',
     apiKey: process.env.NEXT_PUBLIC_SHEETS_API_KEY || '',
-    sheetsRange: process.env.NEXT_PUBLIC_SHEETS_RANGE || 'Sheet1!A1:Z500',
+    sheetsRange: process.env.NEXT_PUBLIC_SHEETS_RANGE || 'DATA_PESANAN_JASTIP!A1:Z500',
     refreshInterval: Number(process.env.NEXT_PUBLIC_REFRESH_INTERVAL) || 30,
     reportName: process.env.NEXT_PUBLIC_REPORT_NAME || 'SEMAR Jastip ERP',
   };
@@ -138,18 +138,39 @@ export function parseCSV(text: string): string[][] {
   return lines;
 }
 
-export async function fetchLiveJastipSheetData(sheetsId: string): Promise<JastipOrder[]> {
+export async function fetchLiveJastipSheetData(sheetsId: string, apiKey?: string): Promise<JastipOrder[]> {
   if (!sheetsId) return INITIAL_ORDERS;
 
   try {
-    const url = `https://docs.google.com/spreadsheets/d/${sheetsId}/gviz/tq?tqx=out:csv`;
-    const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) {
-      console.warn('Failed to fetch GViz CSV, fallback to initial orders');
-      return INITIAL_ORDERS;
+    let rows: string[][] = [];
+
+    // Attempt 1: Try Google Sheets API v4 with apiKey
+    if (apiKey) {
+      try {
+        const range = 'DATA_PESANAN_JASTIP!A1:Z500';
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetsId}/values/${encodeURIComponent(range)}?key=${apiKey}`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.values && json.values.length > 1) {
+            rows = json.values;
+          }
+        }
+      } catch (e) {
+        console.warn('API Key request failed, trying GViz fallback');
+      }
     }
-    const text = await res.text();
-    const rows = parseCSV(text);
+
+    // Attempt 2: Fallback to Google Visualization CSV export
+    if (rows.length < 2) {
+      const url = `https://docs.google.com/spreadsheets/d/${sheetsId}/gviz/tq?tqx=out:csv&sheet=DATA_PESANAN_JASTIP`;
+      const res = await fetch(url, { cache: 'no-store' });
+      if (res.ok) {
+        const text = await res.text();
+        rows = parseCSV(text);
+      }
+    }
+
     if (rows.length < 2) return INITIAL_ORDERS;
 
     const headers = rows[0].map((h) => h.toLowerCase().replace(/[^a-z0-9]/g, ''));

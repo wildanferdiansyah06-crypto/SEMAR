@@ -13,12 +13,13 @@ export function useJastipLive() {
   const [error, setError] = useState<string | null>(null);
 
   const sheetsId = process.env.NEXT_PUBLIC_SHEETS_ID || '';
+  const apiKey = process.env.NEXT_PUBLIC_SHEETS_API_KEY || '';
 
   const loadData = useCallback(async (showRefreshing = true) => {
     if (!sheetsId) return;
     if (showRefreshing) setIsRefreshing(true);
     try {
-      const data = await fetchLiveJastipSheetData(sheetsId);
+      const data = await fetchLiveJastipSheetData(sheetsId, apiKey);
       if (data && data.length > 0) {
         setOrders(data);
         setLastUpdated(new Date().toISOString());
@@ -31,7 +32,7 @@ export function useJastipLive() {
       setIsRefreshing(false);
       setIsLoading(false);
     }
-  }, [sheetsId]);
+  }, [sheetsId, apiKey]);
 
   useEffect(() => {
     loadData(false);
