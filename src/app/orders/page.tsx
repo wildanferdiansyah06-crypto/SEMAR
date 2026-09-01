@@ -2,13 +2,11 @@
 
 import { useState, useMemo } from 'react';
 import {
-  ShoppingBag,
   Search,
   Plus,
   Eye,
   Bike,
   RefreshCw,
-  SlidersHorizontal,
 } from 'lucide-react';
 import OrderDetailModal from '@/components/OrderDetailModal';
 import { useJastipLive } from '@/hooks/useJastipLive';

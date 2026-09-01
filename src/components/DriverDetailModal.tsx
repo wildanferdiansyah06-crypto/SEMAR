@@ -4,13 +4,9 @@ import React from 'react';
 import {
   X,
   Star,
-  Clock,
   Bike,
   Car,
   MapPin,
-  CheckCircle2,
-  DollarSign,
-  TrendingUp,
   Award,
   Phone,
 } from 'lucide-react';

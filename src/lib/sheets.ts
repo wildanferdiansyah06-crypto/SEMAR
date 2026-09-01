@@ -1,6 +1,6 @@
-import { JastipOrder, DriverPerformance, CustomerProfile, StoreMarket, OrderStatus, PaymentStatus } from '@/types/jastip';
+import { JastipOrder, OrderStatus, PaymentStatus } from '@/types/jastip';
 import { DashboardConfig, SheetData } from '@/types';
-import { INITIAL_DRIVERS, INITIAL_ORDERS, INITIAL_STORES } from '@/lib/jastipData';
+import { INITIAL_ORDERS } from '@/lib/jastipData';
 
 // ─── Config helpers ────────────────────────────────────────────
 export function getConfig(): DashboardConfig {
@@ -14,7 +14,8 @@ export function getConfig(): DashboardConfig {
   };
 }
 
-export function saveConfig(config: Partial<DashboardConfig>): void {
+export function saveConfig(config?: Partial<DashboardConfig>): void {
+  void config;
   console.warn('Konfigurasi menggunakan Environment Variables.');
 }
 
@@ -77,14 +78,16 @@ export function getMockData(): SheetData {
 
 export async function fetchSheetData(
   sheetsId: string,
-  range: string,
-  apiKey: string
+  range?: string,
+  apiKey?: string
 ): Promise<SheetData> {
+  void range;
+  void apiKey;
   if (!sheetsId) return getMockData();
   return getMockData();
 }
 
-export function parseIndonesianCurrency(val: any): number {
+export function parseIndonesianCurrency(val: unknown): number {
   if (typeof val === 'number') return val;
   if (!val) return 0;
   const cleaned = String(val)
@@ -156,7 +159,7 @@ export async function fetchLiveJastipSheetData(sheetsId: string, apiKey?: string
             rows = json.values;
           }
         }
-      } catch (e) {
+      } catch {
         console.warn('API Key request failed, trying GViz fallback');
       }
     }
@@ -200,7 +203,6 @@ export async function fetchLiveJastipSheetData(sheetsId: string, apiKey?: string
     const idxDurasiBelanja = getColIndex('durasibelanja');
     const idxDurasiAntar = getColIndex('durasiantar');
     const idxOnTime = getColIndex('ontime');
-    const idxRating = getColIndex('rating');
 
     const orders: JastipOrder[] = dataRows.map((row, i) => {
       const invoice = row[idxInvoice] || `INV-JST-${i + 1}`;

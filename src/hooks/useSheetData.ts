@@ -42,7 +42,6 @@ export function useSheetData(options: UseSheetDataOptions = {}) {
   };
 
   const startCountdown = (interval: number) => {
-    setCountdown(interval);
     if (countdownRef.current) clearInterval(countdownRef.current);
     countdownRef.current = setInterval(() => {
       setCountdown((prev) => {
@@ -55,11 +54,24 @@ export function useSheetData(options: UseSheetDataOptions = {}) {
   useEffect(() => {
     if (!enabled) return;
 
+    let active = true;
     const config = getConfig();
     const interval = config.refreshInterval || 30;
 
     // Initial fetch
-    fetchData(false);
+    fetchSheetData(config.sheetsId, config.sheetsRange, config.apiKey)
+      .then((result) => {
+        if (active) {
+          setData(result);
+          setError(null);
+        }
+      })
+      .catch((err: unknown) => {
+        if (active) {
+          const msg = err instanceof Error ? err.message : 'Gagal mengambil data';
+          setError(msg);
+        }
+      });
 
     // Setup polling
     intervalRef.current = setInterval(() => {
@@ -69,16 +81,18 @@ export function useSheetData(options: UseSheetDataOptions = {}) {
     startCountdown(interval);
 
     return () => {
+      active = false;
       if (intervalRef.current) clearInterval(intervalRef.current);
       if (countdownRef.current) clearInterval(countdownRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled]);
 
   const refetch = () => {
     fetchData(false);
     const config = getConfig();
-    startCountdown(config.refreshInterval || 30);
+    const interval = config.refreshInterval || 30;
+    setCountdown(interval);
+    startCountdown(interval);
   };
 
   return { data, isLoading, isRefreshing, error, countdown, refetch };

@@ -1,17 +1,11 @@
 'use client';
 
-import { useState } from 'react';
 import {
   Clock,
-  TrendingUp,
-  AlertCircle,
-  CheckCircle2,
   Hourglass,
   Store,
   Flame,
   Zap,
-  BarChart3,
-  Calendar,
 } from 'lucide-react';
 import {
   BarChart,
@@ -21,8 +15,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  AreaChart,
-  Area,
 } from 'recharts';
 import MetricCard from '@/components/MetricCard';
 import {
@@ -42,7 +34,15 @@ const CustomTooltipStyle = {
   boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
 };
 
-function HourlyTooltip({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) {
+interface HourlyPayloadItem {
+  value: number;
+  payload: {
+    isPeak: boolean;
+    gmv: number;
+  };
+}
+
+function HourlyTooltip({ active, payload, label }: { active?: boolean; payload?: HourlyPayloadItem[]; label?: string }) {
   if (!active || !payload?.length) return null;
   const isPeak = payload[0].payload.isPeak;
   return (
@@ -66,7 +66,6 @@ function HourlyTooltip({ active, payload, label }: { active?: boolean; payload?:
 }
 
 export default function AnalyticsPage() {
-  const [activeStage, setActiveStage] = useState<string>('all');
 
   return (
     <div className="fade-in">

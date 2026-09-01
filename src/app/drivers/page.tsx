@@ -7,12 +7,8 @@ import {
   Clock,
   Award,
   DollarSign,
-  TrendingUp,
   MapPin,
   Search,
-  Phone,
-  CheckCircle2,
-  ExternalLink,
 } from 'lucide-react';
 import {
   BarChart,
@@ -22,7 +18,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
 } from 'recharts';
 import MetricCard from '@/components/MetricCard';
 import DriverDetailModal from '@/components/DriverDetailModal';
@@ -39,7 +34,13 @@ const CustomTooltipStyle = {
   boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
 };
 
-function SpeedTooltip({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) {
+interface SpeedPayloadItem {
+  name: string;
+  value: number;
+  color: string;
+}
+
+function SpeedTooltip({ active, payload, label }: { active?: boolean; payload?: SpeedPayloadItem[]; label?: string }) {
   if (!active || !payload?.length) return null;
   return (
     <div style={CustomTooltipStyle}>

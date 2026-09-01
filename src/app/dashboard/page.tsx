@@ -9,19 +9,10 @@ import {
   Clock,
   Bike,
   Store,
-  Users,
-  AlertCircle,
-  CheckCircle2,
   ArrowRight,
-  Sparkles,
   ChevronRight,
   Eye,
-  Star,
-  MapPin,
-  Flame,
   RefreshCw,
-  Calendar,
-  Layers,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -61,7 +52,13 @@ const CustomTooltipStyle = {
   backdropFilter: 'blur(12px)',
 };
 
-function TrendTooltip({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) {
+interface TrendPayloadItem {
+  name: string;
+  value: number;
+  color: string;
+}
+
+function TrendTooltip({ active, payload, label }: { active?: boolean; payload?: TrendPayloadItem[]; label?: string }) {
   if (!active || !payload?.length) return null;
   return (
     <div style={CustomTooltipStyle}>
@@ -76,7 +73,16 @@ function TrendTooltip({ active, payload, label }: { active?: boolean; payload?: 
   );
 }
 
-function CategoryTooltip({ active, payload }: { active?: boolean; payload?: any[] }) {
+interface CategoryPayloadItem {
+  payload: {
+    name: string;
+    value: number;
+    color: string;
+    revenue: number;
+  };
+}
+
+function CategoryTooltip({ active, payload }: { active?: boolean; payload?: CategoryPayloadItem[] }) {
   if (!active || !payload?.length) return null;
   const data = payload[0].payload;
   return (
@@ -93,7 +99,7 @@ function CategoryTooltip({ active, payload }: { active?: boolean; payload?: any[
 }
 
 export default function DashboardPage() {
-  const { orders: liveOrders, isRefreshing, refetch, lastUpdated } = useJastipLive();
+  const { orders: liveOrders, isRefreshing, refetch } = useJastipLive();
   const [selectedOrder, setSelectedOrder] = useState<JastipOrder | null>(null);
   const [selectedDriver, setSelectedDriver] = useState<DriverPerformance | null>(null);
   const [timeRange, setTimeRange] = useState<'today' | '7days' | '30days'>('today');

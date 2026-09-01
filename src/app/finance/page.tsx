@@ -1,12 +1,7 @@
 'use client';
 
-import { useState } from 'react';
 import {
   DollarSign,
-  TrendingUp,
-  CreditCard,
-  AlertCircle,
-  CheckCircle2,
   FileText,
   Clock,
   ArrowUpRight,
@@ -17,8 +12,6 @@ import {
 import {
   AreaChart,
   Area,
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -53,7 +46,13 @@ const CustomTooltipStyle = {
   boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
 };
 
-function CashflowTooltip({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) {
+interface CashflowPayloadItem {
+  name: string;
+  value: number;
+  color: string;
+}
+
+function CashflowTooltip({ active, payload, label }: { active?: boolean; payload?: CashflowPayloadItem[]; label?: string }) {
   if (!active || !payload?.length) return null;
   return (
     <div style={CustomTooltipStyle}>

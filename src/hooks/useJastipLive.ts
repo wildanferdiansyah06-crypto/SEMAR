@@ -25,9 +25,10 @@ export function useJastipLive() {
         setLastUpdated(new Date().toISOString());
         setError(null);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.warn('Sheets fetch error:', err);
-      setError(err?.message || 'Gagal menyinkronkan data Google Sheets');
+      const msg = err instanceof Error ? err.message : 'Gagal menyinkronkan data Google Sheets';
+      setError(msg);
     } finally {
       setIsRefreshing(false);
       setIsLoading(false);
@@ -35,14 +36,35 @@ export function useJastipLive() {
   }, [sheetsId, apiKey]);
 
   useEffect(() => {
-    loadData(false);
+    let active = true;
+    if (sheetsId) {
+      fetchLiveJastipSheetData(sheetsId, apiKey)
+        .then((data) => {
+          if (active && data && data.length > 0) {
+            setOrders(data);
+            setLastUpdated(new Date().toISOString());
+            setError(null);
+          }
+        })
+        .catch((err: unknown) => {
+          if (active) {
+            console.warn('Sheets fetch error:', err);
+            const msg = err instanceof Error ? err.message : 'Gagal menyinkronkan data Google Sheets';
+            setError(msg);
+          }
+        });
+    }
+
     const intervalSeconds = Number(process.env.NEXT_PUBLIC_REFRESH_INTERVAL) || 30;
     const timer = setInterval(() => {
       loadData(true);
     }, intervalSeconds * 1000);
 
-    return () => clearInterval(timer);
-  }, [loadData]);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [sheetsId, apiKey, loadData]);
 
   return {
     orders,

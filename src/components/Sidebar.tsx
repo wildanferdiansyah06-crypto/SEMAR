@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -12,7 +12,6 @@ import {
   DollarSign,
   Menu,
   X,
-  Sparkles,
   ChevronRight,
   PackageCheck,
   ShieldCheck,
@@ -35,13 +34,6 @@ const NAV_ITEMS = [
 export default function Sidebar() {
   const pathname = usePathname();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) return null;
 
   return (
     <>

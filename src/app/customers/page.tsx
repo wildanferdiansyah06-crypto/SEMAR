@@ -6,13 +6,8 @@ import {
   Star,
   ShoppingBag,
   TrendingUp,
-  CreditCard,
-  MapPin,
   Search,
   Phone,
-  Mail,
-  Award,
-  ArrowRight,
 } from 'lucide-react';
 import {
   BarChart,
@@ -55,7 +50,16 @@ const CustomTooltipStyle = {
   boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
 };
 
-function DistrictTooltip({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) {
+interface DistrictPayloadItem {
+  value: number;
+  payload: {
+    district: string;
+    orders: number;
+    gmv: number;
+  };
+}
+
+function DistrictTooltip({ active, payload, label }: { active?: boolean; payload?: DistrictPayloadItem[]; label?: string }) {
   if (!active || !payload?.length) return null;
   return (
     <div style={CustomTooltipStyle}>

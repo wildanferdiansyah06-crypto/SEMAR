@@ -8,10 +8,7 @@ import {
   Clock,
   User,
   ShoppingBag,
-  CreditCard,
   Phone,
-  CheckCircle2,
-  AlertTriangle,
   FileText,
 } from 'lucide-react';
 import { JastipOrder } from '@/types/jastip';
